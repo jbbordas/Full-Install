@@ -137,14 +137,13 @@ EOF
 
   clear
   logo
-  echo -e "${CCYAN}INSTALLATION SEEDBOX DOCKER${CEND}"
+  echo -e "${CCYAN}INSTALLATION BBOBOX DOCKER${CEND}"
   echo -e "${CGREEN}${CEND}"
-  echo -e "${CGREEN}   1) Installation Seedbox rclone && gdrive${CEND}"
-  echo -e "${CGREEN}   2) Installation Seedbox Classique ${CEND}"
-  echo -e "${CGREEN}   3) Restauration Seedbox${CEND}"
+  echo -e "${CGREEN}   1) Installation Bbobox rclone && gdrive${CEND}"
+  echo -e "${CGREEN}   2) Restauration bbobox${CEND}"
 
   echo -e ""
-  read -p "Votre choix [1-3]: " CHOICE
+  read -p "Votre choix [1-2]: " CHOICE
   echo ""
   case $CHOICE in
 
