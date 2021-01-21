@@ -1365,8 +1365,17 @@ function install_traefik() {
 	  sed -i '/transcodes/a sub:' /opt/seedbox/variables/account.yml
 	fi
 	# sous domaine
+	line="traefik"
+	grep "$line: ." /opt/seedbox/variables/account.yml > /dev/null 2>&1
+	if [ $? -eq 0 ]; then
+	  result=$(grep "$line: ." /opt/seedbox/variables/account.yml | cut -d ':' -f2 | sed 's/ //g')
+	  FQDNTMP="$result.$DOMAIN"
+	  echo "$line = $FQDNTMP" | tee -a /opt/seedbox/resume  > /dev/null
+	  echo "$line.$DOMAIN" >> $INSTALLEDFILE
+	fi
+	
 	echo ""
-	echo -e "${BWHITE}Adresse par défault: https://gui.${DOMAIN} ${CEND}"
+	echo -e "${BWHITE}Adresse par défault: https://${line}.${DOMAIN} ${CEND}"
 	echo ""
 	read -rp $'\e[33mSouhaitez vous personnaliser le sous domaine? (o/n)\e[0m :' OUI
 	if [[ "$OUI" = "o" ]] || [[ "$OUI" = "O" ]]; then
@@ -1379,8 +1388,8 @@ function install_traefik() {
 	  done
 
 	  if [ ! -z "$subdomain" ]; then
-		sed -i "/gui/d" /opt/seedbox/variables/account.yml > /dev/null 2>&1
-		sed -i "/sub/a \ \ \ gui: $subdomain" /opt/seedbox/variables/account.yml > /dev/null 2>&1
+		sed -i "/traefik/d" /opt/seedbox/variables/account.yml > /dev/null 2>&1
+		sed -i "/sub/a \ \ \ traefik: $subdomain" /opt/seedbox/variables/account.yml > /dev/null 2>&1
 	  fi
 	  echo ""
 	fi
@@ -1799,17 +1808,17 @@ function install_services() {
 			cp "$BASEDIR/includes/dockerapps/$line.yml" "$CONFDIR/conf/$line.yml" > /dev/null 2>&1
 		fi
                    
-                grep "$line: ." /opt/seedbox/variables/account.yml > /dev/null 2>&1
-                if [ $? -eq 0 ]; then
-                  result=$(grep "$line: ." /opt/seedbox/variables/account.yml | cut -d ':' -f2 | sed 's/ //g')
+        grep "$line: ." /opt/seedbox/variables/account.yml > /dev/null 2>&1
+        if [ $? -eq 0 ]; then
+          result=$(grep "$line: ." /opt/seedbox/variables/account.yml | cut -d ':' -f2 | sed 's/ //g')
 		  FQDNTMP="$result.$DOMAIN"
-                  echo "$line = $FQDNTMP" | tee -a /opt/seedbox/resume  > /dev/null
+          echo "$line = $FQDNTMP" | tee -a /opt/seedbox/resume  > /dev/null
 		  echo "$line.$DOMAIN" >> $INSTALLEDFILE
-                else
+        else
 		  FQDNTMP="$line.$DOMAIN"
 		  echo "$FQDNTMP" >> $INSTALLEDFILE
-                  echo "$line = $FQDNTMP" | tee -a /opt/seedbox/resume  > /dev/null
-                fi
+          echo "$line = $FQDNTMP" | tee -a /opt/seedbox/resume  > /dev/null
+        fi
 		FQDNTMP=""
                 
 	done
