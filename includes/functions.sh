@@ -1358,9 +1358,35 @@ function install_ufw() {
 function install_traefik() {
 	oauth
 	echo -e "${BLUE}### TRAEFIK ###${NC}"
-		echo -e " ${BWHITE}* Installation Traefik${NC}"
-		ansible-playbook /opt/seedbox-compose/includes/dockerapps/traefik.yml
-		checking_errors $?		
+	# Ajout ligne sub ds account.yml si elle n y est pas deja
+	ansible-vault decrypt /opt/seedbox/variables/account.yml > /dev/null 2>&1
+	grep "sub" /opt/seedbox/variables/account.yml > /dev/null 2>&1
+	if [ $? -eq 1 ]; then
+	  sed -i '/transcodes/a sub:' /opt/seedbox/variables/account.yml
+	fi
+	# sous domaine
+	echo ""
+	echo -e "${BWHITE}Adresse par défault: https://gui.${DOMAIN} ${CEND}"
+	echo ""
+	read -rp $'\e[33mSouhaitez vous personnaliser le sous domaine? (o/n)\e[0m :' OUI
+	if [[ "$OUI" = "o" ]] || [[ "$OUI" = "O" ]]; then
+	  if [ -z "$subdomain" ]; then
+		subdomain=$1
+	  fi
+	  while [ -z "$subdomain" ]; do
+		>&2 echo -n -e "${BWHITE}Sous Domaine: ${CEND}"
+		read subdomain
+	  done
+
+	  if [ ! -z "$subdomain" ]; then
+		sed -i "/gui/d" /opt/seedbox/variables/account.yml > /dev/null 2>&1
+		sed -i "/sub/a \ \ \ gui: $subdomain" /opt/seedbox/variables/account.yml > /dev/null 2>&1
+	  fi
+	  echo ""
+	fi
+	echo -e " ${BWHITE}* Installation Traefik${NC}"
+	ansible-playbook /opt/seedbox-compose/includes/dockerapps/traefik.yml
+	checking_errors $?		
 	echo ""
 }
 

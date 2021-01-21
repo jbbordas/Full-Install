@@ -56,9 +56,9 @@
           )
             else false }}"
 
-    - name: "Variables | Set 'sub' variable"
+    - name: "Variables | Set 'sub' variable for gui"
       set_fact:
-        sub_enabled: "{{ true if not(
+        sub_gui_enabled: "{{ true if not(
             (sub.gui is undefined)
             or
             (sub.gui is none)
@@ -66,17 +66,28 @@
             (sub.gui | trim | length == 0)
           )
             else false }}"
+            
+    - name: "Variables | Set 'sub' variable for traefik"
+      set_fact:
+        sub_traefik_enabled: "{{ true if not(
+            (sub.traefik is undefined)
+            or
+            (sub.traefik is none)
+            or
+            (sub.traefik | trim | length == 0)
+          )
+            else false }}"        
 
     - name: "Set DNS Record on CloudFlare"
       include_tasks: '/opt/seedbox-compose/includes/config/roles/cloudflare/tasks/main.yml'
       vars:
-        subdomain: traefik
+        subdomain: "{{sub.traefik if sub_traefik_enabled else 'traefik'}}"
       when: cloudflare_enabled
 
     - name: "Set GUI DNS Record on CloudFlare"
       include_tasks: '/opt/seedbox-compose/includes/config/roles/cloudflare/tasks/main.yml'
       vars:
-        subdomain: "{{sub.gui if sub_enabled else 'gui'}}"
+        subdomain: "{{sub.gui if sub_gui_enabled else 'gui'}}"
       when: cloudflare_enabled
 
     - name: Remove Traefik
@@ -145,7 +156,7 @@
           traefik.http.middlewares.redirect-to-https.redirectscheme.scheme: 'https'
           ## HTTP Routers
           traefik.http.routers.traefik-rtr.entrypoints: 'https'
-          traefik.http.routers.traefik-rtr.rule: 'Host(`traefik.{{user.domain}}`)'
+          traefik.http.routers.traefik-rtr.rule: 'Host(`{{sub.traefik if sub_traefik_enabled else 'traefik'}}.{{user.domain}}`)'
           traefik.http.routers.traefik-rtr.tls: 'true'
           traefik.http.routers.traefik-rtr.tls.certresolver: 'letsencrypt' 
           traefik.http.routers.traefik-rtr.tls.domains[0].main: '{{user.domain}}'
@@ -167,7 +178,7 @@
           traefik.http.middlewares.redirect-to-https.redirectscheme.scheme: 'https'
           ## HTTP Routers
           traefik.http.routers.traefik-rtr.entrypoints: 'https'
-          traefik.http.routers.traefik-rtr.rule: 'Host(`traefik.{{user.domain}}`)'
+          traefik.http.routers.traefik-rtr.rule: 'Host(`{{sub.traefik if sub_traefik_enabled else 'traefik'}}.{{user.domain}}`)'
           traefik.http.routers.traefik-rtr.tls: 'true'
           traefik.http.routers.traefik-rtr.tls.certresolver: 'letsencrypt'
           ## Services - API

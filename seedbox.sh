@@ -148,7 +148,7 @@ EOF
   case $CHOICE in
 
 
-  1) ## Installation de la seedbox Plexdrive
+  1) ## Installation de la bbobox
 
     check_dir "$PWD"
     if [[ ! -d "$CONFDIR" ]]; then
@@ -188,37 +188,7 @@ EOF
     fi
     ;;
 
-  2) ## Installation de la seedbox classique
-
-    check_dir "$PWD"
-    if [[ ! -d "$CONFDIR" ]]; then
-      clear
-      conf_dir
-      update_system
-      install_base_packages
-      install_docker
-      define_parameters
-      cloudflare
-      oauth
-      install_traefik
-      install_watchtower
-      install_fail2ban
-      choose_media_folder_classique
-      choose_services
-      subdomain
-      install_services
-      filebot
-      resume_seedbox
-      pause
-      ansible-vault encrypt /opt/seedbox/variables/account.yml >/dev/null 2>&1
-      touch "/opt/seedbox/media-$SEEDUSER"
-      script_classique
-    else
-      script_classique
-    fi
-    ;;
-
-  3) ## restauration de la seedbox
+  2) ## restauration de la seedbox
 
     check_dir "$PWD"
     if [[ ! -d "$CONFDIR" ]]; then
