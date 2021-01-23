@@ -1,0 +1,143 @@
+#!/bin/bash
+
+---
+- hosts: localhost
+  gather_facts: false
+  vars_files:
+    - /opt/seedbox/variables/account.yml
+  tasks:
+        
+    # FACTS #######################################################################
+
+    - name: create collabora state
+      shell: |
+        echo "1" > /opt/seedbox/status/collabora
+
+    - name: Checking for existing app data
+      stat:
+        path: '/opt/seedbox/docker/{{user.name}}/authelia/configuration.yml'
+      register: check
+
+    - name: "Variables | Set 'cloudflare_enabled' variable"
+      set_fact:
+        cloudflare_enabled: "{{ true if not(
+            (cloudflare.login is undefined)
+            or
+            (cloudflare.login is none)
+            or
+            (cloudflare.login | trim | length == 0)
+            or
+            (cloudflare.api is undefined)
+            or
+            (cloudflare.api is none)
+            or
+            (cloudflare.api | trim | length == 0)
+          )
+            else false }}"
+
+    - name: "Variables | Set 'oauth_enabled' variable"
+      set_fact:
+        oauth_enabled: "{{ true if not(
+            (oauth.client is undefined)
+            or
+            (oauth.client is none)
+            or
+            (oauth.client | trim | length == 0)
+            or
+            (oauth.secret is undefined)
+            or
+            (oauth.secret is none)
+            or
+            (oauth.secret | trim | length == 0)
+            or
+            (oauth.account is undefined)
+            or
+            (oauth.account is none)
+            or
+            (oauth.account | trim | length == 0)
+          )
+            else false }}"
+
+    - name: "Variables | Set 'sub' variable"
+      set_fact:
+        sub_enabled: "{{ true if not(
+            (sub.collabora is undefined)
+            or
+            (sub.collabora is none)
+            or
+            (sub.collabora | trim | length == 0)
+          )
+            else false }}"
+
+    - name: "Set DNS Record on CloudFlare"
+      include_tasks: '/opt/seedbox-compose/includes/config/roles/cloudflare/tasks/main.yml'
+      vars:
+        subdomain: "{{sub.collabora if sub_enabled else 'collabora'}}"
+      when: cloudflare_enabled
+
+    - name: 'Set Known Facts'
+      set_fact:
+        pgrole: 'collabora'
+
+    - name: 'domain'
+      shell: | 
+        cat /home/{{user.name}}/resume | tail -1 | cut -d. -f2
+      register: domain
+
+    - name: 'domain'
+      debug:
+        msg: '{{ domain.stdout }}'
+
+    - name: 'com'
+      shell: | 
+        cat /home/{{user.name}}/resume | tail -1 | cut -d. -f3
+      register: com
+
+    - name: 'com'
+      debug:
+        msg: '{{ com.stdout }}'
+
+    - name: "Set DNS Record on CloudFlare"
+      include_tasks: '/opt/seedbox-compose/includes/config/roles/cloudflare/tasks/main.yml'
+      vars:
+        subdomain: "{{sub.collabora if sub_enabled else 'collabora'}}"
+      when: cloudflare_enabled
+
+    - name: 'Adding Traefik'
+      set_fact:
+        co_labels:
+          traefik.enable: 'true'
+          traefik.http.routers.collabora-rtr.entrypoints: 'https'
+          traefik.http.routers.collabora-rtr.rule: 'HostSNI(`{{sub.collabora if sub_enabled else collabora}}.{{user.domain}}`)'
+          traefik.http.routers.collabora-rtr.tls: 'true'
+          ## Middlewares
+          #traefik.http.routers.collabora-rtr.middlewares: "{{ 'chain-oauth@file' if oauth_enabled | default(false) else 'chain-basic-auth@file' }}"
+          ## HTTP Services
+          traefik.http.routers.collabora-rtr.service: 'collabora-svc'
+          traefik.http.services.collabora-svc.loadbalancer.server.port: '9980'
+
+    - name: Create and start Collabora container
+      docker_container:
+        name: collabora
+        image: 'collabora/code'
+        pull: yes
+        env:
+          extra_params: '--o:ssl.enable=false --o:ssl.termination=true'
+          domain: 'nextcloud\\.{{domain.stdout}}\\.{{com.stdout}}'
+          username: '{{user.name}}'
+          password: '{{user.pass}}'
+          DONT_GEN_SSL_CERT: 'true'
+        networks:
+          - name: traefik_proxy
+        restart_policy: unless-stopped
+        state: started
+        labels: '{{co_labels}}'
+
+    - name: add resume file
+      shell: |
+        echo "{{pgrole}}-{{sub.collabora if sub_enabled else pgrole}}.{{user.domain}}" >> /opt/temp.txt
+
+    - name: create collabora state
+      shell: |
+        echo "2" > /opt/seedbox/status/collabora
+
