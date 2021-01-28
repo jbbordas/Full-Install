@@ -262,43 +262,7 @@ EOF
       script_plexdrive
     fi
     ;;
-
-  999) ## Installation seedbox webui
-      mkdir -p /opt/seedbox/variables
-
-      /opt/seedbox-compose/includes/config/scripts/add_user.sh
-      echo ""
-      status
-      update_system
-      install_base_packages
-      install_docker
-      ansible-playbook /opt/seedbox-compose/includes/config/roles/nginx/tasks/main.yml
-      install_traefik
-
-      DOMAIN=$(grep domain /opt/seedbox/variables/account.yml | cut -d ':' -f2 |  tr -d ' ')
-      grep "gui" /opt/seedbox/variables/account.yml > /dev/null 2>&1
-      if [ $? -eq 0 ]; then
-        SUBDOMAIN=$(grep gui /opt/seedbox/variables/account.yml | cut -d ':' -f2 |  tr -d ' ')
-      else
-        SUBDOMAIN="gui"
-      fi
-
-      echo -e "${CRED}---------------------------------------------------------------${CEND}"
-      echo -e "${CRED}          /!\ INSTALLATION EFFECTUEE AVEC SUCCES /!\           ${CEND}"
-      echo -e "${CRED}---------------------------------------------------------------${CEND}"
-      echo ""
-      echo -e "${CRED}---------------------------------------------------------------${CEND}"
-      echo -e "${CCYAN}              Adresse de l'interface WebUI                    ${CEND}"
-      echo -e "${CCYAN}              https://${SUBDOMAIN}.${DOMAIN}                  ${CEND}"
-      echo -e "${CRED}---------------------------------------------------------------${CEND}"
-      echo ""
-
-      ansible-vault encrypt /opt/seedbox/variables/account.yml > /dev/null 2>&1
-      echo -e "\nAppuyer sur ${CCYAN}[ENTREE]${CEND} pour sortir du script..."
-      read -r
-      exit 1
-   ;;
-
+	
   esac
 
 fi
